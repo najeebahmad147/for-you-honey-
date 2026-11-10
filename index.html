@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wassup Ulli</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;text-align:center;color:white;font-family:Arial;
+ background:linear-gradient(140deg,#061b42,#0879d1,#061b42);
+ min-height:100vh;
+}
+main{max-width:850px;margin:auto;padding:25px 12px}
+h1{font-size:clamp(25px,6vw,45px)}
+.number{font-size:30px;letter-spacing:8px;color:#aeeaff}
+.flower{font-size:35px;margin:10px}
+.panel{
+ background:#061b42dd;border:1px solid #80d8ff;
+ border-radius:20px;padding:20px;margin:20px 0;
+}
+input{padding:13px;border-radius:10px;text-align:center}
+button{
+ padding:13px 18px;border:0;border-radius:12px;
+ background:#8bdcff;color:#06214b;font-weight:bold;
+ cursor:pointer;margin:5px;
+}
+button:active{transform:scale(.94)}
+#gameSection{display:none}
+canvas{
+ width:100%;max-width:650px;background:#14537d;
+ border:2px solid #8bdcff;border-radius:15px;
+ touch-action:manipulation;
+}
+.controls{display:flex;justify-content:center;flex-wrap:wrap}
+.stat{display:inline-block;padding:12px}
+#achievement,#gameOver{
+ display:none;position:fixed;inset:0;background:#00152bea;
+ align-items:center;justify-content:center;z-index:5;
+}
+.popup{background:#1769b9;padding:30px;border-radius:20px}
+</style>
+</head>
+<body>
+
+<main>
+<div class="flower">🌸 ✿ 🌼 ✿ 🌸</div>
+<h1>WASSUP ULLI ITS YOUR WEBSITE</h1>
+<div class="number">221198181</div>
+<p>A little blue world made just for you 💙</p>
+
+<section class="panel" id="gate">
+<h2>What's your special date? 🌷</h2>
+<input id="dateInput" placeholder="16 March 2010">
+<br><br>
+<button onclick="unlock()">UNLOCK GAME 💙</button>
+<p id="error"></p>
+</section>
+
+<section class="panel" id="gameSection">
+<h2>🐔 CHICKEN ROAD 🐔</h2>
+<div class="stat">RECORD: <b id="score">0</b></div>
+<div class="stat">ULLU COINS: <b id="coins">0</b></div>
+<div class="stat">BEST: <b id="best">0</b></div>
+<br>
+<canvas id="game" width="600" height="800"></canvas>
+
+<div class="controls">
+<button onclick="left()">⬅ LEFT</button>
+<button onclick="forward()">⬆ FORWARD</button>
+<button onclick="right()">RIGHT ➡</button>
+<button onclick="restart()">↻ RESTART</button>
+</div>
+<p>Phone: Tap buttons | PC: Use arrow keys</p>
+</section>
+</main>
+
+<div id="achievement">
+<div class="popup">
+<h1>🦉💙</h1>
+<h2>YOU ACHIEVE ULLU</h2>
+<button onclick="closeAchievement()">LET'S GO!</button>
+</div>
+</div>
+
+<div id="gameOver">
+<div class="popup">
+<h1>GAME OVER 🐔</h1>
+<p id="finalScore"></p>
+<button onclick="restart()">PLAY AGAIN</button>
+</div>
+</div>
+
+<script>
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+const W=600,H=800;
+
+let chicken,cars,tokens,score,coins,running;
+let best=Number(localStorage.getItem("ulliBest")||0);
+let frame=0,audio;
+
+document.getElementById("best").textContent=best;
+
+function unlock(){
+ let date=document.getElementById("dateInput").value.trim().toLowerCase();
+ if(!["16 march 2010","16/03/2010","16-03-2010","16.03.2010","2010-03-16"].includes(date)){
+ document.getElementById("error").textContent="Incorrect date! Try again 💙";
+ return;
+ }
+ document.getElementById("gate").style.display="none";
+ document.getElementById("gameSection").style.display="block";
+ restart();
+}
+
+function restart(){
+ chicken={x:W/2,y:H-110};
+ cars=[];tokens=[];score=0;coins=0;frame=0;running=true;
+ document.getElementById("score").textContent=0;
+ document.getElementById("coins").textContent=0;
+ document.getElementById("gameOver").style.display="none";
+ document.getElementById("achievement").style.display="none";
+ requestAnimationFrame(loop);
+}
+
+function left(){
+ if(running)chicken.x=Math.max(100,chicken.x-100);
+}
+function right(){
+ if(running)chicken.x=Math.min(500,chicken.x+100);
+}
+function forward(){
+ if(!running)return;
+ chicken.y-=75;
+ if(chicken.y<100){
+ chicken.y=H-110;
+ score++;
+ document.getElementById("score").textContent=score;
+ }
+}
+
+window.addEventListener("keydown",e=>{
+ if(e.key==="ArrowLeft")left();
+ if(e.key==="ArrowRight")right();
+ if(e.key==="ArrowUp"||e.code==="Space")forward();
+});
+
+function owlSound(){
+ try{
+ audio=audio||new AudioContext();
+ [520,390].forEach((f,i)=>{
+ let o=audio.createOscillator(),g=audio.createGain();
+ o.frequency.value=f;
+ g.gain.setValueAtTime(.15,audio.currentTime+i*.18);
+ g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+i*.18+.16);
+ o.connect(g);g.connect(audio.destination);
+ o.start(audio.currentTime+i*.18);
+ o.stop(audio.currentTime+i*.18+.17);
+ });
+ }catch(e){}
+}
+
+function chickenDraw(){
+ ctx.font="55px Arial";
+ ctx.textAlign="center";
+ ctx.fillText("🐔",chicken.x,chicken.y+18);
+}
+
+function drawCar(c){
+ ctx.fillStyle=c.color;
+ ctx.beginPath();
+ ctx.roundRect(c.x-30,c.y-48,60,96,12);
+ ctx.fill();
+ ctx.fillStyle="#bcecff";
+ ctx.fillRect(c.x-20,c.y-30,40,25);
+}
+
+function drawToken(t){
+ ctx.fillStyle="#72caff";
+ ctx.beginPath();
+ ctx.arc(t.x,t.y,26,0,Math.PI*2);
+ ctx.fill();
+ ctx.strokeStyle="white";
+ ctx.lineWidth=4;
+ ctx.stroke();
+ ctx.fillStyle="#06315c";
+ ctx.font="bold 14px Arial";
+ ctx.textAlign="center";
+ ctx.fillText("ULLU",t.x,t.y+5);
+}
+
+function endGame(){
+ running=false;
+ if(score>best){
+ best=score;
+ localStorage.setItem("ulliBest",best);
+ document.getElementById("best").textContent=best;
+ }
+ document.getElementById("finalScore").textContent=
+ "Record: "+score+" | ULLU Coins: "+coins+" | Best: "+best;
+ document.getElementById("gameOver").style.display="flex";
+}
+
+function loop(){
+ if(!running)return;
+ frame++;
+
+ ctx.fillStyle="#14537d";
+ ctx.fillRect(0,0,W,H);
+
+ ctx.strokeStyle="#bcecff";
+ ctx.lineWidth=5;
+ ctx.setLineDash([25,25]);
+ [200,400].forEach(x=>{
+ ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();
+ });
+ ctx.setLineDash([]);
+
+ // Roadside flowers
+ for(let y=50;y<H;y+=120){
+ ctx.font="25px Arial";
+ ctx.fillText("🌸",25,y+(frame%100));
+ ctx.fillText("🌼",570,y+(frame%100));
+ }
+
+ if(frame%75===0){
+ let lane=[100,300,500][Math.floor(Math.random()*3)];
+ cars.push({x:lane,y:-50,color:["#ff6684","#ffd166","#8f9dff"][Math.floor(Math.random()*3)]});
+ }
+ if(frame%110===0){
+ let lane=[100,300,500][Math.floor(Math.random()*3)];
+ tokens.push({x:lane,y:-30});
+ }
+
+ cars.forEach(c=>{
+ c.y+=5+Math.min(score*.04,3);
+ drawCar(c);
+ });
+
+ tokens.forEach(t=>{
+ t.y+=4;
+ drawToken(t);
+ });
+
+ chickenDraw();
+
+ cars=cars.filter(c=>c.y<H+60);
+ tokens=tokens.filter(t=>t.y<H+40);
+
+ for(let c of cars){
+ if(Math.abs(c.x-chicken.x)<55&&Math.abs(c.y-chicken.y)<75){
+ endGame();return;
+ }
+ }
+
+ for(let i=tokens.length-1;i>=0;i--){
+ let t=tokens[i];
+ if(Math.hypot(t.x-chicken.x,t.y-chicken.y)<55){
+ tokens.splice(i,1);
+ coins++;
+ document.getElementById("coins").textContent=coins;
+ owlSound();
+ if(coins%5===0){
+ document.getElementById("achievement").style.display="flex";
+ }
+ }
+ }
+
+ requestAnimationFrame(loop);
+}
+
+function closeAchievement(){
+ document.getElementById("achievement").style.display="none";
+}
+</script>
+</body>
+</html>
